@@ -1,6 +1,8 @@
-// lib/views/debug/location_test_page.dart
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+
 import '../../services/location/location_service.dart';
 
 class LocationTestPage extends StatefulWidget {
@@ -15,6 +17,9 @@ class _LocationTestPageState extends State<LocationTestPage> {
   Position? _position;
   String _error = '';
 
+  // =========================
+  // ✅ TEST NETWORK
+  // =========================
   Future<void> _testNetwork() async {
     setState(() {
       _mode = 'Network';
@@ -30,6 +35,9 @@ class _LocationTestPageState extends State<LocationTestPage> {
     }
   }
 
+  // =========================
+  // ✅ TEST GPS
+  // =========================
   Future<void> _testGps() async {
     setState(() {
       _mode = 'GPS';
@@ -45,6 +53,9 @@ class _LocationTestPageState extends State<LocationTestPage> {
     }
   }
 
+  // =========================
+  // ✅ UI
+  // =========================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,6 +65,9 @@ class _LocationTestPageState extends State<LocationTestPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // =========================
+            // ✅ BUTTON
+            // =========================
             Row(
               children: [
                 Expanded(
@@ -71,7 +85,12 @@ class _LocationTestPageState extends State<LocationTestPage> {
                 ),
               ],
             ),
+
             const SizedBox(height: 24),
+
+            // =========================
+            // ✅ MODE
+            // =========================
             if (_mode.isNotEmpty)
               Text(
                 'Mode: $_mode',
@@ -80,7 +99,12 @@ class _LocationTestPageState extends State<LocationTestPage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+
             const SizedBox(height: 12),
+
+            // =========================
+            // ✅ KOORDINAT
+            // =========================
             if (_position != null)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,10 +115,56 @@ class _LocationTestPageState extends State<LocationTestPage> {
                   Text('Timestamp: ${_position!.timestamp}'),
                 ],
               ),
+
+            // =========================
+            // ✅ ERROR
+            // =========================
             if (_error.isNotEmpty)
               Text(
                 'Error: $_error',
                 style: const TextStyle(color: Colors.red),
+              ),
+
+            const SizedBox(height: 16),
+
+            // =========================
+            // ✅ MAP (HANYA MUNCUL SAAT ADA MODE)
+            // =========================
+            if (_position != null)
+              Expanded(
+                child: FlutterMap(
+                  options: MapOptions(
+                    initialCenter: LatLng(
+                      _position!.latitude,
+                      _position!.longitude,
+                    ),
+                    initialZoom: 16,
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate:
+                          "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                      userAgentPackageName: 'com.example.nami_florist',
+                    ),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: LatLng(
+                            _position!.latitude,
+                            _position!.longitude,
+                          ),
+                          child: Icon(
+                            Icons.location_pin,
+                            size: 45,
+                            color: _mode == 'GPS'
+                                ? Colors.red
+                                : Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
           ],
         ),
