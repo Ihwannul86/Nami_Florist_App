@@ -26,15 +26,13 @@ class NotificationController extends GetxController {
       await _notificationService.initializeLocalNotifications();
       print('[NotificationController] Local notifications initialized');
 
-      await _firebaseMessagingService.initializeFirebaseMessaging();
+      await _firebaseMessagingService.initialize();
 
-      String? token = await _firebaseMessagingService.getFCMToken();
+      String? token = await _firebaseMessagingService.getToken();
       if (token != null) {
         fcmToken.value = token;
         print('[NotificationController] FCM Token: $token');
       }
-
-      _firebaseMessagingService.listenToTokenRefresh();
 
       isLoadingToken.value = false;
     } catch (e) {
