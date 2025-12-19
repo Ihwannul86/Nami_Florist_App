@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "580295358002",
+    "project_id": "nami-florist",
+    "storage_bucket": "nami-florist.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:580295358002:android:2b77719a607753e2c66e2b",
+        "android_client_info": {
+          "package_name": "com.example.nami_florist_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYQw_sydserwfL1uMvMdty0DbejPzTfsM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:580295358002:android:073a5c1749f50fbbc66e2b",
+        "android_client_info": {
+          "package_name": "com.nami.florist"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYQw_sydserwfL1uMvMdty0DbejPzTfsM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

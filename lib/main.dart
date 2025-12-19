@@ -3,13 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'app/routes/app_routes.dart';
 import 'app/bindings/initial_binding.dart';
 import 'services/storage/shared_prefs_service.dart';
 import 'services/storage/hive_service.dart';
+import 'controllers/notification_controller.dart';
+import 'firebase_options.dart';
 import 'views/auth/login_page.dart';
 import 'views/home/landing_page.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +27,14 @@ void main() async {
   // Init Hive
   await HiveService.init();
 
+  // ✅ TAMBAHAN: Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // ✅ TAMBAHAN: Inject NotificationController
+  Get.put(NotificationController());
+
   // Validasi ENV supaya tidak null
   final supabaseUrl = dotenv.env["SUPABASE_URL"];
   final supabaseKey = dotenv.env["SUPABASE_ANON_KEY"];
@@ -32,7 +44,7 @@ void main() async {
   }
 
   // Init Supabase dengan pengecekan aman
-  try { 
+  try {
     await Supabase.initialize(
       url: supabaseUrl ?? "",
       anonKey: supabaseKey ?? "",
@@ -47,6 +59,7 @@ void main() async {
 
   runApp(MyApp(isLoggedIn: loggedIn));
 }
+
 
 class MyApp extends StatelessWidget {
   final bool isLoggedIn;
