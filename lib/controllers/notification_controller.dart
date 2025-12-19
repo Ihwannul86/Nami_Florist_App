@@ -11,12 +11,12 @@ class NotificationController extends GetxController {
   var isLoadingToken = RxBool(false);
 
   @override
-  void onInit() async {
+  void onInit() {
     super.onInit();
     _firebaseMessagingService = FirebaseMessagingService();
     _notificationService = NotificationService();
 
-    await _initializeNotifications();
+    _initializeNotifications(); // Call without await
   }
 
   Future<void> _initializeNotifications() async {
