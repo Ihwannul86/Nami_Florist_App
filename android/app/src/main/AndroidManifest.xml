@@ -9,7 +9,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     
-    <!-- Push Notification Permissions (untuk Modul 6) -->
+    <!-- ✅ POIN 3: Push Notification Permissions (untuk Modul 6) -->
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
@@ -45,5 +45,23 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+            
+        <!-- ✅ POIN 3: FIREBASE MESSAGING META-DATA -->
+        
+        <!-- 1. Default Notification Channel ID (WAJIB sesuai modul) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="high_importance_channel" />
+            
+        <!-- 2. Default Notification Icon (pakai @mipmap bukan @drawable) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+            
+        <!-- 3. Default Notification Color -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@android:color/white" />
+            
     </application>
 </manifest>
