@@ -1,76 +1,59 @@
 // lib/services/storage/shared_prefs_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Service untuk mengelola SharedPreferences
-/// Untuk TUGAS 3: Implementasi penyimpanan lokal
 class SharedPrefsService {
   static SharedPreferences? _prefs;
 
-  // Initialize SharedPreferences
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
   }
 
-  // ========== LOGIN STATE ========== //
+  // Login State
   static Future<void> setLoggedIn(bool value) async {
-    await _prefs?.setBool('logged_in', value);
+    await _prefs?.setBool('isLoggedIn', value);
   }
 
-  static bool getLoggedIn() {
-    return _prefs?.getBool('logged_in') ?? false;
+  static Future<bool> isLoggedIn() async {
+    return _prefs?.getBool('isLoggedIn') ?? false;
   }
 
-  // ========== USER DATA ========== //
-  static Future<void> setUserName(String name) async {
-    await _prefs?.setString('user_name', name);
-  }
-
-  static String? getUserName() {
-    return _prefs?.getString('user_name');
-  }
-
+  // User Email
   static Future<void> setUserEmail(String email) async {
-    await _prefs?.setString('user_email', email);
+    await _prefs?.setString('userEmail', email);
   }
 
-  static String? getUserEmail() {
-    return _prefs?.getString('user_email');
+  static Future<String?> getUserEmail() async {
+    return _prefs?.getString('userEmail');
   }
 
-  // ========== THEME PREFERENCE (untuk tugas 3) ========== //
-  static Future<void> setThemeMode(String mode) async {
-    await _prefs?.setString('theme_mode', mode);
+  // User Name
+  static Future<void> setUserName(String name) async {
+    await _prefs?.setString('userName', name);
   }
 
-  static String getThemeMode() {
-    return _prefs?.getString('theme_mode') ?? 'system';
+  static Future<String?> getUserName() async {
+    return _prefs?.getString('userName');
   }
 
-  static Future<void> setDarkMode(bool value) async {
-    await _prefs?.setBool('dark_mode', value);
+  // User Role (✅ TAMBAHAN UNTUK CEK ADMIN)
+  static Future<void> setUserRole(String role) async {
+    await _prefs?.setString('userRole', role);
   }
 
-  static bool getDarkMode() {
-    return _prefs?.getBool('dark_mode') ?? false;
+  static Future<String?> getUserRole() async {
+    return _prefs?.getString('userRole');
   }
 
-  // ========== APP SETTINGS ========== //
-  static Future<void> setNotificationsEnabled(bool value) async {
-    await _prefs?.setBool('notifications_enabled', value);
+  static Future<bool> isAdmin() async {
+    final role = await getUserRole();
+    return role == 'admin';
   }
 
-  static bool getNotificationsEnabled() {
-    return _prefs?.getBool('notifications_enabled') ?? true;
-  }
-
-  // ========== CLEAR DATA ========== //
-  static Future<void> clearAll() async {
-    await _prefs?.clear();
-  }
-
+  // Clear all user data
   static Future<void> clearUserData() async {
-    await _prefs?.remove('user_name');
-    await _prefs?.remove('user_email');
-    await _prefs?.remove('logged_in');
+    await _prefs?.remove('isLoggedIn');
+    await _prefs?.remove('userEmail');
+    await _prefs?.remove('userName');
+    await _prefs?.remove('userRole');
   }
 }

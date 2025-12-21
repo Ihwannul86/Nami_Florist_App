@@ -1,9 +1,10 @@
 // lib/views/auth/login_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/storage/shared_prefs_service.dart';
+import '../../services/storage/supabase_service.dart';
+import '../../models/user_model.dart';
 import '../home/landing_page.dart';
 import 'register_page.dart';
 
@@ -34,23 +35,60 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      // Login dengan Supabase
+      // 1. Login dengan Supabase Auth
       final response = await Supabase.instance.client.auth.signInWithPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
       if (response.user != null) {
-        // Save login state
-        await SharedPrefsService.setLoggedIn(true);
-        await SharedPrefsService.setUserEmail(_emailController.text.trim());
+        final email = _emailController.text.trim();
 
-        // Navigate to home
-        Get.offAll(() => LandingPage());
+        // 2. Ambil data user dari tabel users (untuk cek role)
+        final userData = await SupabaseService.getUserByEmail(email);
+
+        if (userData != null) {
+          // 3. Save login state
+          await SharedPrefsService.setLoggedIn(true);
+          await SharedPrefsService.setUserEmail(email);
+          await SharedPrefsService.setUserName(userData.nama);
+
+          // 4. ✅ CEK ROLE ADMIN
+          if (userData.isAdmin) {
+            // Tampilkan notifikasi untuk admin
+            Get.snackbar(
+              '🔐 Admin Login',
+              'Selamat datang, ${userData.nama}! Anda masuk sebagai Admin.',
+              backgroundColor: Colors.amber[100],
+              colorText: Colors.amber[900],
+              icon: const Icon(Icons.admin_panel_settings, color: Colors.amber),
+              duration: const Duration(seconds: 4),
+              snackPosition: SnackPosition.TOP,
+            );
+          }
+
+          // 5. Navigate to home
+          Get.offAll(() => LandingPage());
+        } else {
+          // User tidak ditemukan di tabel users
+          Get.snackbar(
+            'Data Tidak Lengkap',
+            'Silakan lengkapi profil Anda terlebih dahulu',
+            backgroundColor: Colors.orange[100],
+            colorText: Colors.orange[900],
+          );
+        }
       }
-    } catch (e) {
+    } on AuthException catch (e) {
       Get.snackbar(
         'Login Gagal',
+        e.message,
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[900],
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
         e.toString(),
         backgroundColor: Colors.red[100],
         colorText: Colors.red[900],
@@ -58,22 +96,6 @@ class _LoginPageState extends State<LoginPage> {
     } finally {
       setState(() => _isLoading = false);
     }
-  }
-
-  Future<void> _loginDemo() async {
-    setState(() => _isLoading = true);
-
-    // Simulasi delay
-    await Future.delayed(const Duration(seconds: 1));
-
-    // Save login state
-    await SharedPrefsService.setLoggedIn(true);
-    await SharedPrefsService.setUserName('Demo User');
-
-    // Navigate to home
-    Get.offAll(() => LandingPage());
-
-    setState(() => _isLoading = false);
   }
 
   @override
@@ -89,10 +111,17 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Logo
-                  Icon(
-                    Icons.local_florist,
-                    size: 80,
-                    color: Colors.purple[400],
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.purple[50],
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.local_florist,
+                      size: 80,
+                      color: Colors.purple[400],
+                    ),
                   ),
                   const SizedBox(height: 24),
 
@@ -119,10 +148,13 @@ class _LoginPageState extends State<LoginPage> {
                     controller: _emailController,
                     decoration: InputDecoration(
                       labelText: 'Email',
-                      prefixIcon: const Icon(Icons.email),
+                      hintText: 'nama@example.com',
+                      prefixIcon: const Icon(Icons.email_outlined),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
@@ -142,12 +174,13 @@ class _LoginPageState extends State<LoginPage> {
                     controller: _passwordController,
                     decoration: InputDecoration(
                       labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock),
+                      hintText: 'Masukkan password',
+                      prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
                         ),
                         onPressed: () {
                           setState(() {
@@ -158,6 +191,8 @@ class _LoginPageState extends State<LoginPage> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
                     obscureText: _obscurePassword,
                     validator: (value) {
@@ -184,6 +219,7 @@ class _LoginPageState extends State<LoginPage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                        elevation: 2,
                       ),
                       child: _isLoading
                           ? const SizedBox(
@@ -203,32 +239,25 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
-                  // Demo button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton(
-                      onPressed: _isLoading ? null : _loginDemo,
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.purple[400]!),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  // Divider
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: Colors.grey[300])),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'atau',
+                          style: TextStyle(color: Colors.grey[600]),
                         ),
                       ),
-                      child: const Text(
-                        'Login Demo',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                      Expanded(child: Divider(color: Colors.grey[300])),
+                    ],
                   ),
                   const SizedBox(height: 24),
 
-                  // Register link (SUDAH DI-UPDATE)
+                  // Register link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -238,10 +267,10 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       GestureDetector(
                         onTap: () {
-                          Get.to(() => RegisterPage());
+                          Get.to(() => const RegisterPage());
                         },
                         child: Text(
-                          'Daftar',
+                          'Daftar Sekarang',
                           style: TextStyle(
                             color: Colors.purple[400],
                             fontWeight: FontWeight.bold,

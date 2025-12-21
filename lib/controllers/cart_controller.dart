@@ -5,7 +5,7 @@ import '../models/product.dart';
 import '../services/storage/hive_service.dart';
 
 class CartController extends GetxController {
-  var cartItems = <Product>[].obs;
+  var cartItems = <Product>[].obs; // ✅ UBAH NAMA dari items ke cartItems
 
   @override
   void onInit() {
@@ -39,7 +39,6 @@ class CartController extends GetxController {
   void addToCart(Product product) {
     cartItems.add(product);
     
-    // Save to Hive
     saveCartToHive();
 
     if (kDebugMode) {
@@ -52,7 +51,6 @@ class CartController extends GetxController {
   void removeFromCart(Product product) {
     cartItems.remove(product);
     
-    // Save to Hive
     saveCartToHive();
 
     if (kDebugMode) {

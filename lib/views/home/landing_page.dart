@@ -15,6 +15,7 @@ import '../../controllers/landing_controller.dart';
 import '../../models/product.dart';
 import '../../services/storage/shared_prefs_service.dart';
 import '../../services/storage/supabase_service.dart';
+import '../../models/user_model.dart';
 
 // Views & Widgets
 import '../product/product_card.dart';
@@ -70,6 +71,15 @@ class LandingPage extends StatelessWidget {
   Future<void> _logout() async {
     await SharedPrefsService.clearUserData();
     await SupabaseService.signOut();
+    
+    Get.snackbar(
+      'Logout Berhasil',
+      'Anda telah keluar dari akun',
+      backgroundColor: Colors.green[100],
+      colorText: Colors.green[900],
+      icon: const Icon(Icons.check_circle, color: Colors.green),
+    );
+    
     Get.offAll(() => const LoginPage());
   }
 
@@ -80,29 +90,58 @@ class LandingPage extends StatelessWidget {
         title: const Text('Nami Florist'),
         centerTitle: true,
         actions: [
+          // ✅ TOMBOL AKUN DI KANAN ATAS
           GestureDetector(
             onTap: () async {
-              final email = await SharedPrefsService.getUserEmail() ?? '-';
-              _showProfileMenu(context, email);
+              final isLoggedIn = await SharedPrefsService.isLoggedIn();
+              
+              if (isLoggedIn) {
+                // Jika sudah login, tampilkan menu profil
+                final email = await SharedPrefsService.getUserEmail() ?? '';
+                _showProfileMenu(context, email);
+              } else {
+                // Jika belum login, arahkan ke halaman login
+                Get.to(() => const LoginPage());
+              }
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: CircleAvatar(
-                backgroundColor: Colors.purple,
-                child: FutureBuilder<String?>(
-                  future: Future.value(
-                    SharedPrefsService.getUserEmail(),
-                  ), // FIX tipe Future
-                  builder: (context, snapshot) {
-                    final email = snapshot.data ?? '';
-                    final initial =
-                        email.isNotEmpty ? email[0].toUpperCase() : '?';
-                    return Text(
-                      initial,
-                      style: const TextStyle(color: Colors.white),
+              child: FutureBuilder<bool>(
+                future: SharedPrefsService.isLoggedIn(),
+                builder: (context, snapshot) {
+                  final isLoggedIn = snapshot.data ?? false;
+                  
+                  if (isLoggedIn) {
+                    // Tampilkan avatar dengan initial
+                    return FutureBuilder<String?>(
+                      future: SharedPrefsService.getUserEmail(),
+                      builder: (context, emailSnapshot) {
+                        final email = emailSnapshot.data ?? '';
+                        final initial = email.isNotEmpty ? email[0].toUpperCase() : '?';
+                        
+                        return CircleAvatar(
+                          backgroundColor: Colors.purple[400],
+                          child: Text(
+                            initial,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
+                      },
                     );
-                  },
-                ),
+                  } else {
+                    // Tampilkan icon login
+                    return CircleAvatar(
+                      backgroundColor: Colors.grey[300],
+                      child: Icon(
+                        Icons.person_outline,
+                        color: Colors.grey[700],
+                      ),
+                    );
+                  }
+                },
               ),
             ),
           ),
@@ -270,8 +309,6 @@ class LandingPage extends StatelessWidget {
                               builder: (_) => const LocationTestPage(),
                             ),
                           );
-                          // Atau jika ingin pakai GetX:
-                          // Get.to(() => const LocationTestPage());
                         },
                         child: const Text(
                           'DEBUG: Location Test',
@@ -377,38 +414,185 @@ class LandingPage extends StatelessWidget {
     );
   }
 
-void _showProfileMenu(BuildContext context, String email) {
-  showModalBottomSheet(
-    context: context,
-    shape: const RoundedRectangleBorder( // ✅ BENAR
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    builder: (_) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.person)),
-              title: Text(email),
-              subtitle: const Text('Akun yang sedang login'),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _logout,
-                icon: const Icon(Icons.logout),
-                label: const Text('Log Out'),
+  // ✅ PROFILE MENU DENGAN CEK ROLE ADMIN
+  void _showProfileMenu(BuildContext context, String email) async {
+    // Ambil data user dari Supabase untuk cek role
+    final userData = await SupabaseService.getUserByEmail(email);
+    
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.purple[400],
+                    child: Text(
+                      email.isNotEmpty ? email[0].toUpperCase() : '?',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          userData?.nama ?? 'User',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          email,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        // ✅ BADGE ADMIN
+                        if (userData?.isAdmin ?? false)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.amber[100],
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: Colors.amber),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.admin_panel_settings,
+                                  size: 14,
+                                  color: Colors.amber[900],
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Admin',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.amber[900],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+              
+              const SizedBox(height: 24),
+              const Divider(),
+              const SizedBox(height: 16),
 
+              // Menu Items
+              ListTile(
+                leading: const Icon(Icons.person_outline),
+                title: const Text('Profil Saya'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  // TODO: Navigate to profile page
+                  Get.back();
+                  Get.snackbar(
+                    'Info',
+                    'Fitur profil akan segera hadir',
+                    backgroundColor: Colors.blue[100],
+                  );
+                },
+              ),
+              
+              ListTile(
+                leading: const Icon(Icons.shopping_bag_outlined),
+                title: const Text('Riwayat Pesanan'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  // TODO: Navigate to order history
+                  Get.back();
+                  Get.snackbar(
+                    'Info',
+                    'Fitur riwayat pesanan akan segera hadir',
+                    backgroundColor: Colors.blue[100],
+                  );
+                },
+              ),
+
+              // ✅ MENU KHUSUS ADMIN
+              if (userData?.isAdmin ?? false)
+                ListTile(
+                  leading: Icon(Icons.dashboard, color: Colors.amber[700]),
+                  title: Text(
+                    'Dashboard Admin',
+                    style: TextStyle(color: Colors.amber[900]),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    // TODO: Navigate to admin dashboard
+                    Get.back();
+                    Get.snackbar(
+                      'Admin',
+                      'Dashboard admin akan segera hadir',
+                      backgroundColor: Colors.amber[100],
+                      colorText: Colors.amber[900],
+                      icon: const Icon(Icons.admin_panel_settings, color: Colors.amber),
+                    );
+                  },
+                ),
+
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 16),
+
+              // Logout Button
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Get.back();
+                    _logout();
+                  },
+                  icon: const Icon(Icons.logout, color: Colors.red),
+                  label: const Text(
+                    'Keluar',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

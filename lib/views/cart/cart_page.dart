@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/cart_controller.dart';
 import '../../models/product.dart';
-import 'checkout_page.dart';
+import '../../views/payment/checkout_page.dart';
 
 class CartPage extends StatelessWidget {
   const CartPage({super.key});
@@ -18,6 +18,7 @@ class CartPage extends StatelessWidget {
         centerTitle: true,
       ),
       body: Obx(() {
+        // ✅ FIX: Gunakan cartItems (sesuai CartController)
         if (cartController.cartItems.isEmpty) {
           return Center(
             child: Column(
@@ -52,6 +53,7 @@ class CartPage extends StatelessWidget {
 
         // Grouping produk yang sama
         Map<String, Map<String, dynamic>> groupedItems = {};
+        // ✅ FIX: Gunakan cartItems
         for (var product in cartController.cartItems) {
           if (groupedItems.containsKey(product.name)) {
             groupedItems[product.name]!['quantity']++;

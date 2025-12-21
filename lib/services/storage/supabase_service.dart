@@ -1,9 +1,10 @@
 // lib/services/storage/supabase_service.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
+import '../../models/order_model.dart';
+import '../../models/user_model.dart';
 
 /// Service untuk mengelola Supabase (cloud storage)
-/// Untuk TUGAS 3: Implementasi Supabase untuk auth dan database
 class SupabaseService {
   static final SupabaseClient _client = Supabase.instance.client;
 
@@ -87,6 +88,135 @@ class SupabaseService {
     return _client.auth.currentUser != null;
   }
 
+  // ========== USER OPERATIONS ========== //
+
+  /// ✅ Register user baru (sign up + insert ke table users)
+  static Future<UserModel?> registerUser({
+    required String email,
+    required String password,
+    required String nama,
+    String? noHp,
+    String? alamatLengkap,
+    String role = 'customer', // ✅ BENAR
+  }) async {
+    try {
+      // 1. Sign up ke Supabase Auth
+      final authResponse = await signUpWithEmail(
+        email: email,
+        password: password,
+        data: {'nama': nama},
+      );
+
+      if (authResponse.user == null) {
+        throw Exception('Sign up gagal');
+      }
+
+      // 2. Insert data user ke table users
+      final userData = {
+        'email': email,
+        'nama': nama,
+        'no_hp': noHp,
+        'alamat_lengkap': alamatLengkap,
+        'role': role, // ✅ BENAR
+      };
+
+      await _client.from('users').insert(userData);
+
+      if (kDebugMode) {
+        debugPrint('✅ User registered: $email');
+      }
+
+      // 3. Return UserModel
+      return UserModel(
+        email: email,
+        nama: nama,
+        noHp: noHp,
+        alamatLengkap: alamatLengkap,
+        role: role, // ✅ BENAR
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Register user error: $e');
+      }
+      return null;
+    }
+  }
+
+  /// Get user by email dari table users
+  static Future<UserModel?> getUserByEmail(String email) async {
+    try {
+      final response = await _client
+          .from('users')
+          .select()
+          .eq('email', email)
+          .maybeSingle();
+
+      if (response == null) {
+        if (kDebugMode) {
+          debugPrint('⚠️ User not found: $email');
+        }
+        return null;
+      }
+
+      if (kDebugMode) {
+        debugPrint('✅ User found: $email');
+      }
+
+      return UserModel.fromJson(response);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Get user error: $e');
+      }
+      return null;
+    }
+  }
+
+  // ========== ORDER OPERATIONS ========== //
+
+  /// Create order (simpan ke table orders)
+  static Future<OrderModel?> createOrder(OrderModel order) async {
+    try {
+      final response = await _client
+          .from('orders')
+          .insert(order.toJson())
+          .select()
+          .single();
+
+      if (kDebugMode) {
+        debugPrint('✅ Order created with ID: ${response['id']}');
+      }
+
+      return OrderModel.fromJson(response);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Create order error: $e');
+      }
+      return null;
+    }
+  }
+
+  /// Get orders by email
+  static Future<List<OrderModel>> getOrdersByEmail(String email) async {
+    try {
+      final response = await _client
+          .from('orders')
+          .select()
+          .eq('email', email)
+          .order('created_at', ascending: false);
+
+      if (kDebugMode) {
+        debugPrint('✅ Got ${response.length} orders for $email');
+      }
+
+      return response.map((json) => OrderModel.fromJson(json)).toList();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Get orders error: $e');
+      }
+      return [];
+    }
+  }
+
   // ========== DATABASE OPERATIONS ========== //
   
   /// Insert data ke table
@@ -114,7 +244,6 @@ class SupabaseService {
     bool ascending = true,
   }) async {
     try {
-      // ✅ FIX: Jangan re-assign, langsung chain method
       final response = await _client
           .from(table)
           .select()
@@ -192,11 +321,10 @@ class SupabaseService {
   }) async {
     try {
       final response = await _client
-        .from(table)
-        .select()
-        .order(orderBy ?? 'id', ascending: ascending);
-      
-      //final response = await query;
+          .from(table)
+          .select()
+          .eq(column, value)
+          .order(orderBy ?? 'id', ascending: ascending);
       
       if (kDebugMode) {
         debugPrint('✅ Got ${response.length} filtered rows from $table');
