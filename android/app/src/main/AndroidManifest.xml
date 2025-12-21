@@ -46,14 +46,14 @@
             android:name="flutterEmbedding"
             android:value="2" />
             
-        <!-- ✅ POIN 3: FIREBASE MESSAGING META-DATA -->
+        <!-- ✅ FIREBASE MESSAGING META-DATA dengan CUSTOM SOUND -->
         
-        <!-- 1. Default Notification Channel ID (WAJIB sesuai modul) -->
+        <!-- 1. Default Notification Channel ID - HARUS SAMA dengan channel di code -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="high_importance_channel" />
+            android:value="custom_sound_channel" />
             
-        <!-- 2. Default Notification Icon (pakai @mipmap bukan @drawable) -->
+        <!-- 2. Default Notification Icon -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@mipmap/ic_launcher" />
@@ -62,6 +62,11 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@android:color/white" />
+        
+        <!-- ✅ 4. CUSTOM SOUND untuk notifikasi dari Firebase -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_sound"
+            android:resource="@raw/notif1" />
             
     </application>
 </manifest>

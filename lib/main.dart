@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:geolocator/geolocator.dart'; // ✅ IMPORT LANGSUNG
 
 import 'app/routes/app_routes.dart';
 import 'app/bindings/initial_binding.dart';
@@ -27,13 +28,10 @@ void main() async {
   // Init Hive
   await HiveService.init();
 
-  // ✅ TAMBAHAN: Initialize Firebase
+  // ✅ Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  // ✅ TAMBAHAN: Inject NotificationController
-  Get.put(NotificationController());
 
   // Validasi ENV supaya tidak null
   final supabaseUrl = dotenv.env["SUPABASE_URL"];
@@ -61,10 +59,72 @@ void main() async {
 }
 
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final bool isLoggedIn;
 
   const MyApp({super.key, required this.isLoggedIn});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    _initializePermissions();
+  }
+
+  /// ✅ Initialize semua permissions SETELAH app build
+  Future<void> _initializePermissions() async {
+    // Delay untuk memastikan GetMaterialApp sudah ready
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    try {
+      // ══════════════════════════════════════════════════════════
+      // 1️⃣ REQUEST NOTIFICATION PERMISSION
+      // ══════════════════════════════════════════════════════════
+      print('🔔 Step 1: Requesting NOTIFICATION permission...');
+      Get.put(NotificationController());
+      print('✅ NotificationController initialized');
+      
+      // Tunggu sampai notification permission selesai
+      await Future.delayed(const Duration(seconds: 2));
+      
+      // ══════════════════════════════════════════════════════════
+      // 2️⃣ REQUEST LOCATION PERMISSION (FORCE)
+      // ══════════════════════════════════════════════════════════
+      print('📍 Step 2: Requesting LOCATION permission...');
+      
+      // Cek status permission saat ini
+      LocationPermission currentPermission = await Geolocator.checkPermission();
+      print('📊 Current location permission status: $currentPermission');
+      
+      // Selalu request permission (akan muncul dialog jika belum granted)
+      if (currentPermission == LocationPermission.denied || 
+          currentPermission == LocationPermission.deniedForever) {
+        print('⚠️ Location permission not granted, requesting...');
+        LocationPermission newPermission = await Geolocator.requestPermission();
+        print('📊 New location permission status: $newPermission');
+        
+        if (newPermission == LocationPermission.denied) {
+          print('❌ User DENIED location permission');
+        } else if (newPermission == LocationPermission.deniedForever) {
+          print('❌ User DENIED location permission FOREVER');
+        } else {
+          print('✅ Location permission GRANTED: $newPermission');
+        }
+      } else {
+        print('✅ Location permission already granted: $currentPermission');
+        // Jika sudah granted sebelumnya, tetap panggil sekali lagi untuk memastikan
+        // (ini tidak akan muncul dialog lagi)
+        await Geolocator.requestPermission();
+      }
+      
+    } catch (e) {
+      print('❌ Error initializing permissions: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +134,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(useMaterial3: true),
       initialBinding: InitialBinding(),
       getPages: AppRoutes.routes,
-      home: isLoggedIn ? LandingPage() : const LoginPage(),
+      home: widget.isLoggedIn ? LandingPage() : const LoginPage(),
     );
   }
 }
