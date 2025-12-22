@@ -1,4 +1,3 @@
-// lib/services/storage/supabase_service.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import '../../models/order_model.dart';
@@ -12,7 +11,7 @@ class SupabaseService {
   static SupabaseClient get client => _client;
 
   // ========== AUTHENTICATION ========== //
-  
+
   /// Sign in dengan email dan password
   static Future<AuthResponse> signInWithEmail({
     required String email,
@@ -23,11 +22,11 @@ class SupabaseService {
         email: email,
         password: password,
       );
-      
+
       if (kDebugMode) {
         debugPrint('✅ Login successful: ${response.user?.email}');
       }
-      
+
       return response;
     } catch (e) {
       if (kDebugMode) {
@@ -49,11 +48,11 @@ class SupabaseService {
         password: password,
         data: data,
       );
-      
+
       if (kDebugMode) {
         debugPrint('✅ Sign up successful: ${response.user?.email}');
       }
-      
+
       return response;
     } catch (e) {
       if (kDebugMode) {
@@ -90,14 +89,14 @@ class SupabaseService {
 
   // ========== USER OPERATIONS ========== //
 
-  /// ✅ Register user baru (sign up + insert ke table users)
+  /// Register user baru (sign up + insert ke table users)
   static Future<UserModel?> registerUser({
     required String email,
     required String password,
     required String nama,
     String? noHp,
     String? alamatLengkap,
-    String role = 'customer', // ✅ BENAR
+    String role = 'customer',
   }) async {
     try {
       // 1. Sign up ke Supabase Auth
@@ -117,7 +116,7 @@ class SupabaseService {
         'nama': nama,
         'no_hp': noHp,
         'alamat_lengkap': alamatLengkap,
-        'role': role, // ✅ BENAR
+        'role': role,
       };
 
       await _client.from('users').insert(userData);
@@ -132,7 +131,7 @@ class SupabaseService {
         nama: nama,
         noHp: noHp,
         alamatLengkap: alamatLengkap,
-        role: role, // ✅ BENAR
+        role: role,
       );
     } catch (e) {
       if (kDebugMode) {
@@ -195,20 +194,22 @@ class SupabaseService {
     }
   }
 
-  /// Get orders by email
+  /// Get orders by email (riwayat pesanan user)
   static Future<List<OrderModel>> getOrdersByEmail(String email) async {
     try {
       final response = await _client
           .from('orders')
           .select()
           .eq('email', email)
-          .order('created_at', ascending: false);
+          .order('createdat', ascending: false); // pakai nama kolom di DB
 
       if (kDebugMode) {
         debugPrint('✅ Got ${response.length} orders for $email');
       }
 
-      return response.map((json) => OrderModel.fromJson(json)).toList();
+      return response
+          .map<OrderModel>((json) => OrderModel.fromJson(json))
+          .toList();
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Get orders error: $e');
@@ -217,9 +218,8 @@ class SupabaseService {
     }
   }
 
-  // ========== DATABASE OPERATIONS ========== //
-  
-  /// Insert data ke table
+  // ========== GENERIC DATABASE OPERATIONS ========== //
+
   static Future<void> insertData({
     required String table,
     required Map<String, dynamic> data,
@@ -237,7 +237,6 @@ class SupabaseService {
     }
   }
 
-  /// Get data dari table
   static Future<List<Map<String, dynamic>>> getData({
     required String table,
     String? orderBy,
@@ -248,11 +247,11 @@ class SupabaseService {
           .from(table)
           .select()
           .order(orderBy ?? 'id', ascending: ascending);
-      
+
       if (kDebugMode) {
         debugPrint('✅ Got ${response.length} rows from $table');
       }
-      
+
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       if (kDebugMode) {
@@ -262,7 +261,6 @@ class SupabaseService {
     }
   }
 
-  /// Update data di table
   static Future<void> updateData({
     required String table,
     required Map<String, dynamic> data,
@@ -270,11 +268,8 @@ class SupabaseService {
     required dynamic value,
   }) async {
     try {
-      await _client
-          .from(table)
-          .update(data)
-          .eq(column, value);
-      
+      await _client.from(table).update(data).eq(column, value);
+
       if (kDebugMode) {
         debugPrint('✅ Data updated in $table');
       }
@@ -286,18 +281,14 @@ class SupabaseService {
     }
   }
 
-  /// Delete data dari table
   static Future<void> deleteData({
     required String table,
     required String column,
     required dynamic value,
   }) async {
     try {
-      await _client
-          .from(table)
-          .delete()
-          .eq(column, value);
-      
+      await _client.from(table).delete().eq(column, value);
+
       if (kDebugMode) {
         debugPrint('✅ Data deleted from $table');
       }
@@ -309,9 +300,6 @@ class SupabaseService {
     }
   }
 
-  // ========== ADVANCED QUERIES ========== //
-  
-  /// Get data dengan filter
   static Future<List<Map<String, dynamic>>> getDataWithFilter({
     required String table,
     required String column,
@@ -325,11 +313,11 @@ class SupabaseService {
           .select()
           .eq(column, value)
           .order(orderBy ?? 'id', ascending: ascending);
-      
+
       if (kDebugMode) {
         debugPrint('✅ Got ${response.length} filtered rows from $table');
       }
-      
+
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       if (kDebugMode) {
@@ -339,7 +327,6 @@ class SupabaseService {
     }
   }
 
-  /// Get data dengan limit
   static Future<List<Map<String, dynamic>>> getDataWithLimit({
     required String table,
     int limit = 10,
@@ -348,17 +335,17 @@ class SupabaseService {
   }) async {
     try {
       var query = _client.from(table).select().limit(limit);
-      
+
       if (orderBy != null) {
         query = query.order(orderBy, ascending: ascending);
       }
-      
+
       final response = await query;
-      
+
       if (kDebugMode) {
         debugPrint('✅ Got ${response.length} rows (limit: $limit) from $table');
       }
-      
+
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       if (kDebugMode) {

@@ -1,42 +1,48 @@
-// lib/models/order_model.dart
+import 'package:uuid/uuid.dart';
+
 class OrderModel {
-  final String? id; // ✅ GANTI: dari int? ke String?
-  final Map<String, dynamic> items;
-  final double total;
-  final String paymentmethod;
-  final String? status;
-  final DateTime? createdat;
+  String? id;
+  String? email;
+  Map<String, dynamic>? items;
+  double? total;
+  String? paymentmethod;
+  String? status;
+  DateTime? createdat;
 
   OrderModel({
     this.id,
-    required this.items,
-    required this.total,
-    required this.paymentmethod,
+    this.email,
+    this.items,
+    this.total,
+    this.paymentmethod,
     this.status,
     this.createdat,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     return OrderModel(
-      id: json['id']?.toString(), // ✅ TAMBAH: konversi ke String
-      items: json['items'] as Map<String, dynamic>,
-      total: (json['total'] as num).toDouble(),
-      paymentmethod: json['paymentmethod'],
-      status: json['status'],
-      createdat: json['createdat'] != null 
-          ? DateTime.parse(json['createdat']) 
+      id: json['id'] as String?,
+      email: json['email'] as String?,
+      items: json['items'] as Map<String, dynamic>?,
+      total: (json['total'] as num?)?.toDouble(),
+      paymentmethod: json['paymentmethod'] as String?,
+      status: json['status'] as String?,
+      createdat: json['createdat'] != null
+          ? DateTime.parse(json['createdat'] as String)
           : null,
     );
   }
 
   Map<String, dynamic> toJson() {
+    final generatedId = id ?? const Uuid().v4(); // 🔹 buat id jika null
     return {
-      if (id != null) 'id': id,
+      'id': generatedId,
+      'email': email,
       'items': items,
       'total': total,
       'paymentmethod': paymentmethod,
-      'status': status ?? 'pending',
-      if (createdat != null) 'createdat': createdat!.toIso8601String(),
+      'status': status,
+      'createdat': createdat?.toIso8601String(),
     };
   }
 }

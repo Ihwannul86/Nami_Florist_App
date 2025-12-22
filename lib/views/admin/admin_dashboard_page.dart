@@ -1,3 +1,4 @@
+// lib/views/admin/admin_dashboard_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../models/order_model.dart';
@@ -32,7 +33,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
 
     final user = await SupabaseService.getUserByEmail(email);
-
     if (!mounted) return;
 
     // Guard: hanya admin
@@ -47,15 +47,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       return;
     }
 
-    // Ambil semua orders
+    // Ambil semua orders (urut terbaru)
     final rows = await SupabaseService.getData(
       table: 'orders',
-      orderBy: 'createdat',
+      orderBy: 'createdat', // nama kolom di DB
       ascending: false,
     );
 
     setState(() {
-      _orders = rows.map((e) => OrderModel.fromJson(e)).toList();
+      _orders = rows.map<OrderModel>((e) => OrderModel.fromJson(e)).toList();
       _isLoading = false;
     });
   }
@@ -72,30 +72,45 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ? const Center(child: CircularProgressIndicator())
           : _orders.isEmpty
               ? const Center(child: Text('Belum ada order.'))
-              : ListView.builder(
-                  itemCount: _orders.length,
-                  itemBuilder: (context, index) {
-                    final order = _orders[index];
-                    final items = order.items;
+              : RefreshIndicator(
+                  onRefresh: _loadData,
+                  child: ListView.builder(
+                    itemCount: _orders.length,
+                    itemBuilder: (context, index) {
+                      final order = _orders[index];
+                      final items = order.items ?? {}; // aman dari null
 
-                    return Card(
-                      margin: const EdgeInsets.all(8),
-                      child: ListTile(
-                        title: Text(items['nama'] ?? 'Tanpa nama'),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Email: ${items['email']}'),
-                            Text('Produk: ${items['nama_produk']}'),
-                            Text('Total produk: ${items['total_produk']}'),
-                            Text('Total bayar: Rp ${order.total.toInt()}'),
-                            Text('Metode: ${order.paymentmethod}'),
-                            Text('Status: ${order.status ?? 'pending'}'),
-                          ],
+                      return Card(
+                        margin: const EdgeInsets.all(8),
+                        child: ListTile(
+                          title: Text(items['nama'] ?? 'Tanpa nama'),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Email: ${items['email'] ?? '-'}'),
+                              Text(
+                                  'Produk: ${items['nama_produk'] ?? 'Tidak ada'}'),
+                              Text(
+                                  'Total produk: ${items['total_produk'] ?? 0}'),
+                              Text(
+                                'Total bayar: Rp ${order.total?.toInt() ?? 0}',
+                              ),
+                              Text('Metode: ${order.paymentmethod ?? '-'}'),
+                              Text('Status: ${order.status ?? 'pending'}'),
+                              if (order.createdat != null)
+                                Text(
+                                  'Tanggal: ${order.createdat}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
     );
   }

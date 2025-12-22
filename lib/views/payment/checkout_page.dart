@@ -26,8 +26,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final _noHpController = TextEditingController();
   final _alamatController = TextEditingController();
 
-  String _selectedPaymentMethod = 'BCA Virtual Account'; // ✅ Tambah ini
-
+  String _selectedPaymentMethod = 'BCA Virtual Account';
   bool _isLoading = false;
 
   @override
@@ -83,25 +82,33 @@ class _CheckoutPageState extends State<CheckoutPage> {
     setState(() => _isLoading = true);
 
     try {
-      // ✅ Ambil data dari cart
+      // Ambil email login dari SharedPrefs (lebih aman untuk filter riwayat)
+      final loginEmail = await SharedPrefsService.getUserEmail();
+      if (loginEmail == null) {
+        throw Exception('Email pengguna tidak ditemukan, silakan login ulang.');
+      }
+
+      // Ambil data dari cart
       final List<Product> cartItems = List<Product>.from(cart.cartItems);
       final totalPembayaran = cart.totalPrice.toDouble();
 
-      // ✅ Hitung quantity produk (grouping produk yang sama)
+      // Hitung quantity produk (grouping produk yang sama)
       Map<String, int> productQuantities = {};
       for (var product in cartItems) {
-        productQuantities[product.name] = (productQuantities[product.name] ?? 0) + 1;
+        productQuantities[product.name] =
+            (productQuantities[product.name] ?? 0) + 1;
       }
 
-      // ✅ Format nama produk dengan quantity
+      // Format nama produk dengan quantity
       final namaProduk = productQuantities.entries
           .map((entry) => '${entry.key} x${entry.value}')
           .join(', ');
 
       final totalProduk = cartItems.length;
 
-      // ✅ Buat order dengan struktur BARU sesuai table Supabase
+      // Buat order dengan struktur sesuai table Supabase
       final order = OrderModel(
+        email: loginEmail, // <- kolom email di tabel orders
         items: {
           'email': _emailController.text.trim(),
           'nama': _namaController.text.trim(),
@@ -112,16 +119,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
         },
         total: totalPembayaran,
         paymentmethod: _selectedPaymentMethod,
+        status: 'pending',
+        createdat: DateTime.now(),
       );
 
       // Simpan order ke Supabase
       final result = await SupabaseService.createOrder(order);
 
       if (result != null) {
-        // Sukses simpan order
         debugPrint('✅ Order berhasil disimpan dengan ID: ${result.id}');
 
-        // Save order history to Hive (optional)
+        // Simpan riwayat lokal (Hive) kalau masih dipakai
         await payment.saveOrderHistory(
           customerName: _namaController.text,
           totalAmount: cart.totalPrice,
@@ -340,7 +348,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
               const SizedBox(height: 24),
 
-              // ✅ SECTION: Metode Pembayaran
+              // SECTION: Metode Pembayaran
               const Text(
                 'Metode Pembayaran',
                 style: TextStyle(
@@ -350,7 +358,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
               const SizedBox(height: 12),
 
-              // Payment method options
               ...[
                 'BCA Virtual Account',
                 'Mandiri Virtual Account',
@@ -371,8 +378,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     },
                     title: Text(method),
                     secondary: Icon(
-                      method.contains('Virtual') 
-                          ? Icons.account_balance 
+                      method.contains('Virtual')
+                          ? Icons.account_balance
                           : Icons.payment,
                       color: Colors.purple,
                     ),
