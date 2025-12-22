@@ -7,6 +7,7 @@ import '../../views/cart/cart_page.dart';
 import '../../views/payment/checkout_page.dart';
 import '../../views/payment/payment_success_page.dart';
 import '../../views/notification_history_view.dart';
+import '../../views/admin/admin_dashboard_page.dart'; // 🔹 tambahkan
 
 class AppRoutes {
   // Route names
@@ -17,6 +18,7 @@ class AppRoutes {
   static const String checkout = '/checkout';
   static const String paymentSuccess = '/payment-success';
   static const String notificationHistory = '/notification-history';
+  static const String adminDashboard = '/admin-dashboard'; // 🔹 baru
 
   // Route configurations
   static final routes = [
@@ -38,15 +40,19 @@ class AppRoutes {
     ),
     GetPage(
       name: checkout,
-      page: () => CheckoutPage(), // ✅ FIX: Tanpa const, tanpa parameter
+      page: () => CheckoutPage(),
     ),
     GetPage(
       name: paymentSuccess,
-      page: () => const PaymentSuccessPage(), // ✅ FIX: Tanpa parameter
+      page: () => const PaymentSuccessPage(),
     ),
     GetPage(
       name: notificationHistory,
       page: () => const NotificationHistoryView(),
+    ),
+    GetPage(
+      name: adminDashboard,
+      page: () => const AdminDashboardPage(), // 🔹 baru
     ),
   ];
 }

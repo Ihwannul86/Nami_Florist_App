@@ -2,10 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../services/storage/shared_prefs_service.dart';
 import '../../services/storage/supabase_service.dart';
 import '../../models/user_model.dart';
-import '../home/landing_page.dart';
+import '../../app/routes/app_routes.dart';      // 🔹 pakai routes, bukan langsung LandingPage
+import '../home/landing_page.dart';           // (boleh dihapus kalau tidak dipakai lagi)
 import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -45,17 +47,16 @@ class _LoginPageState extends State<LoginPage> {
         final email = _emailController.text.trim();
 
         // 2. Ambil data user dari tabel users (untuk cek role)
-        final userData = await SupabaseService.getUserByEmail(email);
+        final UserModel? userData = await SupabaseService.getUserByEmail(email);
 
         if (userData != null) {
-          // 3. Save login state
+          // 3. Simpan state login
           await SharedPrefsService.setLoggedIn(true);
           await SharedPrefsService.setUserEmail(email);
           await SharedPrefsService.setUserName(userData.nama);
 
-          // 4. ✅ CEK ROLE ADMIN
+          // 4. Snackbar info role
           if (userData.isAdmin) {
-            // Tampilkan notifikasi untuk admin
             Get.snackbar(
               '🔐 Admin Login',
               'Selamat datang, ${userData.nama}! Anda masuk sebagai Admin.',
@@ -65,10 +66,23 @@ class _LoginPageState extends State<LoginPage> {
               duration: const Duration(seconds: 4),
               snackPosition: SnackPosition.TOP,
             );
+          } else {
+            Get.snackbar(
+              'Login Berhasil',
+              'Selamat datang, ${userData.nama}!',
+              backgroundColor: Colors.green[100],
+              colorText: Colors.green[900],
+              duration: const Duration(seconds: 3),
+              snackPosition: SnackPosition.TOP,
+            );
           }
 
-          // 5. Navigate to home
-          Get.offAll(() => LandingPage());
+          // 5. Redirect berdasarkan role
+          if (userData.isAdmin) {
+            Get.offAllNamed(AppRoutes.adminDashboard);
+          } else {
+            Get.offAllNamed(AppRoutes.home);
+          }
         } else {
           // User tidak ditemukan di tabel users
           Get.snackbar(
@@ -94,12 +108,15 @@ class _LoginPageState extends State<LoginPage> {
         colorText: Colors.red[900],
       );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // ⬇️ bagian build kamu tetap sama seperti sebelumnya
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -110,7 +127,7 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo
+                  // ... SEMUA WIDGET DI BAWAH INI TETAP SAMA ...
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -124,8 +141,6 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // Title
                   const Text(
                     'Nami Florist',
                     style: TextStyle(
@@ -142,8 +157,6 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 48),
-
-                  // Email field
                   TextFormField(
                     controller: _emailController,
                     decoration: InputDecoration(
@@ -168,8 +181,6 @@ class _LoginPageState extends State<LoginPage> {
                     },
                   ),
                   const SizedBox(height: 16),
-
-                  // Password field
                   TextFormField(
                     controller: _passwordController,
                     decoration: InputDecoration(
@@ -206,8 +217,6 @@ class _LoginPageState extends State<LoginPage> {
                     },
                   ),
                   const SizedBox(height: 24),
-
-                  // Login button
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -240,8 +249,6 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // Divider
                   Row(
                     children: [
                       Expanded(child: Divider(color: Colors.grey[300])),
@@ -256,8 +263,6 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                   const SizedBox(height: 24),
-
-                  // Register link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

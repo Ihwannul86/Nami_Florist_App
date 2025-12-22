@@ -22,56 +22,56 @@ import '../product/product_card.dart';
 import '../../widgets/cart_fab.dart';
 import '../../widgets/card_plant_api.dart';
 import '../auth/login_page.dart';
-import '../debug/location_test_page.dart';
+import '../../app/routes/app_routes.dart';
 
-class LandingPage extends StatelessWidget {
+class LandingPage extends StatefulWidget {
   LandingPage({super.key});
 
+  @override
+  State<LandingPage> createState() => _LandingPageState();
+}
+
+class _LandingPageState extends State<LandingPage> {
   final cart = Get.find<CartController>();
   final payment = Get.find<PaymentController>();
   final plant = Get.find<PlantController>();
   final weather = Get.find<WeatherController>();
   final landing = Get.find<LandingController>();
 
+  UserModel? _currentUser;
+
   final products = [
-    Product(
-        name: 'Bouquet Coklat',
-        price: 50000,
-        image: 'assets/images/product1.png'),
-    Product(
-        name: 'Bouquet Mawar Putih',
-        price: 65000,
-        image: 'assets/images/product2.png'),
-    Product(
-        name: 'Bouquet Mawar Merah',
-        price: 48000,
-        image: 'assets/images/product3.png'),
-    Product(
-        name: 'Bouquet Mix Bloom',
-        price: 70000,
-        image: 'assets/images/product4.png'),
-    Product(
-        name: 'Bouquet Mix Bloom',
-        price: 55000,
-        image: 'assets/images/product5.png'),
-    Product(
-        name: 'Bouquet Mawar Pink',
-        price: 60000,
-        image: 'assets/images/product6.png'),
-    Product(
-        name: 'Bouquet Mix Bloom',
-        price: 75000,
-        image: 'assets/images/product7.png'),
-    Product(
-        name: 'Bouquet Mix Bloom',
-        price: 80000,
-        image: 'assets/images/product8.png'),
+    Product(name: 'Bouquet Coklat', price: 50000, image: 'assets/images/product1.png'),
+    Product(name: 'Bouquet Mawar Putih', price: 65000, image: 'assets/images/product2.png'),
+    Product(name: 'Bouquet Mawar Merah', price: 48000, image: 'assets/images/product3.png'),
+    Product(name: 'Bouquet Mix Bloom', price: 70000, image: 'assets/images/product4.png'),
+    Product(name: 'Bouquet Mix Bloom', price: 55000, image: 'assets/images/product5.png'),
+    Product(name: 'Bouquet Mawar Pink', price: 60000, image: 'assets/images/product6.png'),
+    Product(name: 'Bouquet Mix Bloom', price: 75000, image: 'assets/images/product7.png'),
+    Product(name: 'Bouquet Mix Bloom', price: 80000, image: 'assets/images/product8.png'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUser();
+  }
+
+  Future<void> _loadCurrentUser() async {
+    final email = await SharedPrefsService.getUserEmail();
+    if (email == null) return;
+
+    final user = await SupabaseService.getUserByEmail(email);
+    if (!mounted) return;
+    setState(() {
+      _currentUser = user;
+    });
+  }
 
   Future<void> _logout() async {
     await SharedPrefsService.clearUserData();
     await SupabaseService.signOut();
-    
+
     Get.snackbar(
       'Logout Berhasil',
       'Anda telah keluar dari akun',
@@ -79,7 +79,7 @@ class LandingPage extends StatelessWidget {
       colorText: Colors.green[900],
       icon: const Icon(Icons.check_circle, color: Colors.green),
     );
-    
+
     Get.offAll(() => const LoginPage());
   }
 
@@ -90,17 +90,14 @@ class LandingPage extends StatelessWidget {
         title: const Text('Nami Florist'),
         centerTitle: true,
         actions: [
-          // ✅ TOMBOL AKUN DI KANAN ATAS
           GestureDetector(
             onTap: () async {
               final isLoggedIn = await SharedPrefsService.isLoggedIn();
-              
+
               if (isLoggedIn) {
-                // Jika sudah login, tampilkan menu profil
                 final email = await SharedPrefsService.getUserEmail() ?? '';
                 _showProfileMenu(context, email);
               } else {
-                // Jika belum login, arahkan ke halaman login
                 Get.to(() => const LoginPage());
               }
             },
@@ -110,15 +107,15 @@ class LandingPage extends StatelessWidget {
                 future: SharedPrefsService.isLoggedIn(),
                 builder: (context, snapshot) {
                   final isLoggedIn = snapshot.data ?? false;
-                  
+
                   if (isLoggedIn) {
-                    // Tampilkan avatar dengan initial
                     return FutureBuilder<String?>(
                       future: SharedPrefsService.getUserEmail(),
                       builder: (context, emailSnapshot) {
                         final email = emailSnapshot.data ?? '';
-                        final initial = email.isNotEmpty ? email[0].toUpperCase() : '?';
-                        
+                        final initial =
+                            email.isNotEmpty ? email[0].toUpperCase() : '?';
+
                         return CircleAvatar(
                           backgroundColor: Colors.purple[400],
                           child: Text(
@@ -132,7 +129,6 @@ class LandingPage extends StatelessWidget {
                       },
                     );
                   } else {
-                    // Tampilkan icon login
                     return CircleAvatar(
                       backgroundColor: Colors.grey[300],
                       child: Icon(
@@ -152,6 +148,7 @@ class LandingPage extends StatelessWidget {
           plant.loadPlantsBasedOnWeather();
           weather.getWeather();
           landing.getCurrentLocation();
+          _loadCurrentUser();
         },
         child: CustomScrollView(
           slivers: [
@@ -234,7 +231,7 @@ class LandingPage extends StatelessWidget {
                       return const SizedBox();
                     }),
 
-                    // === TAMPILKAN SUHU === //
+                    // Suhu
                     Obx(() {
                       final temp = weather.temperature.value;
                       return Text(
@@ -249,7 +246,7 @@ class LandingPage extends StatelessWidget {
 
                     const SizedBox(height: 12),
 
-                    // === BAGIAN PETA === //
+                    // Peta
                     const SizedBox(height: 20),
                     Obx(() {
                       if (landing.isLoading.value) {
@@ -265,7 +262,8 @@ class LandingPage extends StatelessWidget {
                         height: 300,
                         child: FlutterMap(
                           options: MapOptions(
-                            initialCenter: LatLng(pos.latitude, pos.longitude),
+                            initialCenter:
+                                LatLng(pos.latitude, pos.longitude),
                             initialZoom: 15.0,
                             interactionOptions: const InteractionOptions(
                               flags: InteractiveFlag.all,
@@ -296,30 +294,6 @@ class LandingPage extends StatelessWidget {
                         ),
                       );
                     }),
-
-                    const SizedBox(height: 20),
-
-                    // Tombol DEBUG di bawah peta
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const LocationTestPage(),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          'DEBUG: Location Test',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blueGrey,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                    ),
 
                     const SizedBox(height: 20),
 
@@ -414,11 +388,9 @@ class LandingPage extends StatelessWidget {
     );
   }
 
-  // ✅ PROFILE MENU DENGAN CEK ROLE ADMIN
   void _showProfileMenu(BuildContext context, String email) async {
-    // Ambil data user dari Supabase untuk cek role
     final userData = await SupabaseService.getUserByEmail(email);
-    
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -464,72 +436,54 @@ class LandingPage extends StatelessWidget {
                             color: Colors.grey[600],
                           ),
                         ),
-                        // ✅ BADGE ADMIN
-                        if (userData?.isAdmin ?? false)
-                          Container(
-                            margin: const EdgeInsets.only(top: 4),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.verified_user,
+                              size: 16,
+                              color: Colors.purple[400],
                             ),
-                            decoration: BoxDecoration(
-                              color: Colors.amber[100],
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: Colors.amber),
+                            const SizedBox(width: 4),
+                            Text(
+                              userData?.role ?? 'customer',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.purple[400],
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.admin_panel_settings,
-                                  size: 14,
-                                  color: Colors.amber[900],
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Admin',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.amber[900],
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 16),
 
-              // Menu Items
+              // Profil lengkap
               ListTile(
                 leading: const Icon(Icons.person_outline),
                 title: const Text('Profil Saya'),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: () {
-                  // TODO: Navigate to profile page
                   Get.back();
-                  Get.snackbar(
-                    'Info',
-                    'Fitur profil akan segera hadir',
-                    backgroundColor: Colors.blue[100],
-                  );
+                  _showProfileDetail(userData);
                 },
               ),
-              
+
+              // Riwayat pesanan
               ListTile(
                 leading: const Icon(Icons.shopping_bag_outlined),
                 title: const Text('Riwayat Pesanan'),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: () {
-                  // TODO: Navigate to order history
                   Get.back();
+                  // TODO: arahkan ke halaman history orders
                   Get.snackbar(
                     'Info',
                     'Fitur riwayat pesanan akan segera hadir',
@@ -538,33 +492,11 @@ class LandingPage extends StatelessWidget {
                 },
               ),
 
-              // ✅ MENU KHUSUS ADMIN
-              if (userData?.isAdmin ?? false)
-                ListTile(
-                  leading: Icon(Icons.dashboard, color: Colors.amber[700]),
-                  title: Text(
-                    'Dashboard Admin',
-                    style: TextStyle(color: Colors.amber[900]),
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    // TODO: Navigate to admin dashboard
-                    Get.back();
-                    Get.snackbar(
-                      'Admin',
-                      'Dashboard admin akan segera hadir',
-                      backgroundColor: Colors.amber[100],
-                      colorText: Colors.amber[900],
-                      icon: const Icon(Icons.admin_panel_settings, color: Colors.amber),
-                    );
-                  },
-                ),
-
               const SizedBox(height: 16),
               const Divider(),
               const SizedBox(height: 16),
 
-              // Logout Button
+              // Logout
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -593,6 +525,73 @@ class LandingPage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  void _showProfileDetail(UserModel? user) {
+    if (user == null) {
+      Get.snackbar(
+        'Error',
+        'Data profil tidak ditemukan.',
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[900],
+      );
+      return;
+    }
+
+    showDialog(
+      context: Get.context!,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('Profil Saya'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _profileRow('Nama', user.nama),
+              _profileRow('Email', user.email),
+              _profileRow('No. HP', user.noHp ?? '-'),
+              _profileRow('Alamat', user.alamatLengkap ?? '-'),
+              _profileRow('Role', user.role),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Tutup'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _profileRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
