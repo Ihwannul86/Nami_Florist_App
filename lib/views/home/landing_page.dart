@@ -41,14 +41,38 @@ class _LandingPageState extends State<LandingPage> {
   UserModel? _currentUser;
 
   final products = [
-    Product(name: 'Bouquet Coklat', price: 50000, image: 'assets/images/product1.png'),
-    Product(name: 'Bouquet Mawar Putih', price: 65000, image: 'assets/images/product2.png'),
-    Product(name: 'Bouquet Mawar Merah', price: 48000, image: 'assets/images/product3.png'),
-    Product(name: 'Bouquet Mix Bloom', price: 70000, image: 'assets/images/product4.png'),
-    Product(name: 'Bouquet Mix Bloom', price: 55000, image: 'assets/images/product5.png'),
-    Product(name: 'Bouquet Mawar Pink', price: 60000, image: 'assets/images/product6.png'),
-    Product(name: 'Bouquet Mix Bloom', price: 75000, image: 'assets/images/product7.png'),
-    Product(name: 'Bouquet Mix Bloom', price: 80000, image: 'assets/images/product8.png'),
+    Product(
+        name: 'Bouquet Coklat',
+        price: 50000,
+        image: 'assets/images/product1.png'),
+    Product(
+        name: 'Bouquet Mawar Putih',
+        price: 65000,
+        image: 'assets/images/product2.png'),
+    Product(
+        name: 'Bouquet Mawar Merah',
+        price: 48000,
+        image: 'assets/images/product3.png'),
+    Product(
+        name: 'Bouquet Mix Bloom',
+        price: 70000,
+        image: 'assets/images/product4.png'),
+    Product(
+        name: 'Bouquet Mix Bloom',
+        price: 55000,
+        image: 'assets/images/product5.png'),
+    Product(
+        name: 'Bouquet Mawar Pink',
+        price: 60000,
+        image: 'assets/images/product6.png'),
+    Product(
+        name: 'Bouquet Mix Bloom',
+        price: 75000,
+        image: 'assets/images/product7.png'),
+    Product(
+        name: 'Bouquet Mix Bloom',
+        price: 80000,
+        image: 'assets/images/product8.png'),
   ];
 
   @override
@@ -369,8 +393,10 @@ class _LandingPageState extends State<LandingPage> {
                           return Container(
                             margin: const EdgeInsets.only(bottom: 12),
                             child: CardPlantApi(
-                              name: plantData["common_name"] ?? "Unknown Plant",
-                              image: plantData["default_image"]?["thumbnail"],
+                              name:
+                                  plantData["common_name"] ?? "Unknown Plant",
+                              image:
+                                  plantData["default_image"]?["thumbnail"],
                               plantData: plantData,
                             ),
                           );
@@ -390,6 +416,7 @@ class _LandingPageState extends State<LandingPage> {
 
   void _showProfileMenu(BuildContext context, String email) async {
     final userData = await SupabaseService.getUserByEmail(email);
+    final isAdmin = (userData?.role ?? 'customer') == 'admin';
 
     showModalBottomSheet(
       context: context,
@@ -465,7 +492,7 @@ class _LandingPageState extends State<LandingPage> {
               const Divider(),
               const SizedBox(height: 16),
 
-              // Profil lengkap
+              // Profil lengkap (selalu)
               ListTile(
                 leading: const Icon(Icons.person_outline),
                 title: const Text('Profil Saya'),
@@ -476,21 +503,29 @@ class _LandingPageState extends State<LandingPage> {
                 },
               ),
 
-              // Riwayat pesanan
-              ListTile(
-                leading: const Icon(Icons.shopping_bag_outlined),
-                title: const Text('Riwayat Pesanan'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  Get.back();
-                  // TODO: arahkan ke halaman history orders
-                  Get.snackbar(
-                    'Info',
-                    'Fitur riwayat pesanan akan segera hadir',
-                    backgroundColor: Colors.blue[100],
-                  );
-                },
-              ),
+              // Riwayat Pesanan: hanya user biasa
+              if (!isAdmin)
+                ListTile(
+                  leading: const Icon(Icons.history),
+                  title: const Text('Riwayat Pesanan'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    Get.back();
+                    Get.toNamed(AppRoutes.orderHistory);
+                  },
+                ),
+
+              // Daftar Pesanan (Admin Dashboard): hanya admin
+              if (isAdmin)
+                ListTile(
+                  leading: const Icon(Icons.dashboard_outlined),
+                  title: const Text('Daftar Pesanan'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    Get.back();
+                    Get.toNamed(AppRoutes.adminDashboard);
+                  },
+                ),
 
               const SizedBox(height: 16),
               const Divider(),

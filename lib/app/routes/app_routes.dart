@@ -7,7 +7,8 @@ import '../../views/cart/cart_page.dart';
 import '../../views/payment/checkout_page.dart';
 import '../../views/payment/payment_success_page.dart';
 import '../../views/notification_history_view.dart';
-import '../../views/admin/admin_dashboard_page.dart'; // 🔹 tambahkan
+import '../../views/admin/admin_dashboard_page.dart';
+import '../../views/order/order_history_page.dart';
 
 class AppRoutes {
   // Route names
@@ -18,7 +19,8 @@ class AppRoutes {
   static const String checkout = '/checkout';
   static const String paymentSuccess = '/payment-success';
   static const String notificationHistory = '/notification-history';
-  static const String adminDashboard = '/admin-dashboard'; // 🔹 baru
+  static const String adminDashboard = '/admin-dashboard';
+  static const String orderHistory = '/order-history';
 
   // Route configurations
   static final routes = [
@@ -52,7 +54,11 @@ class AppRoutes {
     ),
     GetPage(
       name: adminDashboard,
-      page: () => const AdminDashboardPage(), // 🔹 baru
+      page: () => const AdminDashboardPage(),
+    ),
+    GetPage(
+      name: orderHistory,
+      page: () => const OrderHistoryPage(),
     ),
   ];
 }
